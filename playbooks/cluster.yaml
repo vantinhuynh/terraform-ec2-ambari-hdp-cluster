@@ -1,0 +1,34 @@
+---
+- hosts: utility
+  vars:
+    var_ambari_user: admin
+    var_ambari_password: admin
+    var_ambari_server: "{{ lookup('file', 'ambariserver.txt') }}"
+  tasks:
+  # list registered cluster hosts
+  - name: Get hosts
+    uri:
+      url: "http://{{ var_ambari_server }}:8080/api/v1/hosts"
+      method: GET
+      headers:
+        X-Requested_by: ambari
+        Content-Type: application/json
+      return_content: yes
+      user: "{{ var_ambari_user }}"
+      password: "{{ var_ambari_password }}"
+      force_basic_auth: yes
+    register: resp_hosts
+  - name: remove hosts.out if it exists
+    file: path=/tmp/hosts.out state=absent
+  - name: write the registered cluster hosts to file
+    template: src=~/hostmap.tpl dest=~/hostmap.json
+
+  # post the blueprint and hostmap to initiate cluster build
+  - name: post blueprint
+    command: curl -X POST -u {{ var_ambari_user }}:{{ var_ambari_password }} -swo -i /dev/null -w "%{http_code}" http://{{ var_ambari_server }}:8080/api/v1/blueprints/testclus -d @testclus.json
+  #- name: Post blueprints
+  #  uri: url=http://{{ var_ambari_server }}:8080/api/v1/blueprints/testclus method=POST user={{ var_ambari_user }} password={{ var_ambari_password }} body="{{ lookup('file','testclus.json') }}" force_basic_auth=yes status_code=201,409
+  - name: Create cluster
+    command: curl -X POST -u {{ var_ambari_user }}:{{ var_ambari_password }} -swo -i /dev/null -w "%{http_code}" http://{{ var_ambari_server }}:8080/api/v1/clusters/testclus -d @hostmap.json
+  #- name: Create cluster
+  #  uri: url=http://{{ var_ambari_server }}:8080/api/v1/clusters/testclus method=POST user={{ var_ambari_user }} password={{ var_ambari_password }} body="{{ lookup('file','hostmap.json') }}" force_basic_auth=yes status_code=202,500

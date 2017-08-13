@@ -8,12 +8,12 @@ variable "secret_key" {
 /* Global variables */
 
 variable "keypair" {
-  default = "tinhuynh@tinhuynh"
+  default = ""
 }
 
 
 variable "keyfile" {
-  default = "terraform_key/terra_id_rsa.pem"
+  default = "terraform_key/key.pem"
 } 
 
 /* Region-specific setup is below. Uses
